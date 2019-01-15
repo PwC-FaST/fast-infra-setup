@@ -1,0 +1,114 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: mongodb-secondary
+  namespace: mongodb
+  labels:
+    platform: fast
+    app: mongodb
+spec:
+  selector:
+    matchLabels:
+      app: mongodb
+      platform: fast
+      component: secondary
+  podManagementPolicy: "Parallel"
+  serviceName: mongodb-headless
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: mongodb
+        platform: fast
+        component: secondary
+    spec:
+      securityContext:
+        fsGroup: 1001
+        runAsUser: 1001
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: agentpool
+                operator: In
+                values:
+                - kubepool2
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                    - mongodb
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: mongodb-secondary
+          image: docker.io/bitnami/mongodb:4.0.2-debian-9
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 27017
+            name: mongodb
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              cpu: 2
+              memory: 8Gi
+          env:
+          - name: MONGODB_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MONGODB_REPLICA_SET_MODE
+            value: "secondary"
+          - name: MONGODB_PRIMARY_HOST
+            value: mongodb
+          - name: MONGODB_REPLICA_SET_NAME
+            value: "rs0"
+          - name: MONGODB_ADVERTISED_HOSTNAME
+            value: "$(MONGODB_POD_NAME).mongodb-headless.mongodb.svc.cluster.local"
+          - name: MONGODB_ENABLE_IPV6
+            value: "yes"
+          - name: MONGODB_EXTRA_FLAGS
+            value: 
+          livenessProbe:
+            exec:
+              command:
+                - mongo
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - mongo
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+          volumeMounts:
+            - name: datadir
+              mountPath: /bitnami/mongodb
+      volumes:
+  volumeClaimTemplates:
+    - metadata:
+        name: datadir
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "300Gi"
+        storageClassName: "cinder-ssd"

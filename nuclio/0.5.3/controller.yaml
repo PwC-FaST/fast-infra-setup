@@ -1,0 +1,27 @@
+# The nuclio controller listens for changes on the function CRD and creates the proper deployment, service, etc
+# for the function
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: nuclio-controller
+  namespace: nuclio
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        nuclio.io/env: demo
+        nuclio.io/app: controller
+        nuclio.io/class: service
+      annotations:
+        nuclio.io/version: 0.5.3
+    spec:
+      containers:
+      - name: nuclio-controller
+        image: nuclio/controller:0.5.3-amd64
+        env:
+        - name: NUCLIO_CONTROLLER_IMAGE_PULL_SECRETS
+          value: registry-credentials
+        - name: NUCLIO_CONTROLLER_NAMESPACE
+          value: "*"
+      serviceAccountName: nuclio

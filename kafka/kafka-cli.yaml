@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-cli
+  namespace: kafka
+spec:
+  containers:
+  - name: client
+    image: confluentinc/cp-kafka:4.0.1-1
+    command:
+    - sleep
+    - infinity
+  restartPolicy: Never

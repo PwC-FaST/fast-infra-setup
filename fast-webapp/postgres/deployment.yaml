@@ -1,0 +1,81 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: fast-webapp-postgres
+  namespace: fast-platform
+  labels:
+    platform: fast
+    module: core
+    app: webapp-postgres
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        platform: fast
+        module: core
+        app: webapp-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: eufast/postgres:9.6-alpine
+        imagePullPolicy: Always
+        ports:
+        - name: postgres
+          containerPort: 5432
+        env:
+        - name: PGDATA
+          value: /data
+        - name: POSTGRES_DB
+          value: fast
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef: 
+              name: fast-webapp-postgres
+              key: postgres-user
+        - name: PGUSER
+          valueFrom:
+            secretKeyRef: 
+              name: fast-webapp-postgres
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef: 
+              name: fast-webapp-postgres
+              key: postgres-password
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -h
+            - localhost
+            - -d
+            - $(POSTGRES_DB)
+            - -U
+            - $(PGUSER)
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+          periodSeconds: 5
+          failureThreshold: 24
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -h
+            - localhost
+            - -d
+            - $(POSTGRES_DB)
+            - -U
+            - $(PGUSER)
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+        resources:
+        volumeMounts:
+        - name: data
+          mountPath: /data
+          subPath: pgdata
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: fast-webapp-postgres
+

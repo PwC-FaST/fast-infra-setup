@@ -1,0 +1,107 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+  namespace: kafka
+  labels:
+    app: zookeeper
+    release: fast-platform-v0.1
+spec:
+  serviceName: zookeeper-headless
+  replicas: 3
+  updateStrategy:
+    type: OnDelete
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+        release: fast-platform-v0.1
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: agentpool
+                operator: In
+                values:
+                - kubepool2
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                release: zookeeper
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: zookeeper-server
+        imagePullPolicy: Always
+        image: gcr.io/google_samples/k8szk:v2
+        resources:
+          limits:
+            cpu: 1
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 2Gi
+        ports:
+        - containerPort: 2181
+          name: client
+        - containerPort: 2888
+          name: server
+        - containerPort: 3888
+          name: leader-election
+        env:
+        - name : ZK_REPLICAS
+          value: "3"
+        - name : ZK_HEAP_SIZE
+          value: "1G"
+        - name : ZK_TICK_TIME
+          value: "2000"
+        - name : ZK_INIT_LIMIT
+          value: "10"
+        - name : ZK_SYNC_LIMIT
+          value: "5"
+        - name : ZK_MAX_CLIENT_CNXNS
+          value: "60"
+        - name: ZK_SNAP_RETAIN_COUNT
+          value: "3"
+        - name: ZK_PURGE_INTERVAL
+          value: "1"
+        - name: ZK_LOG_LEVEL
+          value: INFO
+        - name: ZK_CLIENT_PORT
+          value: "2181"
+        - name: ZK_SERVER_PORT
+          value: "2888"
+        - name: ZK_ELECTION_PORT
+          value: "3888"
+        command:
+        - sh
+        - -c
+        - zkGenConfig.sh && exec zkServer.sh start-foreground
+        readinessProbe:
+          exec:
+            command:
+            - "zkOk.sh"
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - "zkOk.sh"
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+        volumeMounts:
+        - name: datadir
+          mountPath: /var/lib/zookeeper
+          subPath: data
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: "cinder"
+

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-test
+  namespace: kafka
+spec:
+  containers:
+  - name: client
+    image: confluentinc/cp-kafka:4.0.1-1
+    command:
+    - sh
+    - -c
+    - |
+      # Create the topic
+      kafka-topics --zookeeper zookeeper:2181 --topic helm-test-topic-create-consume-produce --create --partitions 1 --replication-factor 1 --if-not-exists && \
+      # Create a message
+      MESSAGE="`date -u`" && \
+      # Produce a test message to the topic
+      echo "$MESSAGE" | kafka-console-producer --broker-list kafka-broker:9092 --topic helm-test-topic-create-consume-produce && \
+      # Consume a test message from the topic
+      kafka-console-consumer --bootstrap-server kafka-headless:9092 --topic helm-test-topic-create-consume-produce --from-beginning --timeout-ms 2000 --max-messages 1 | grep "$MESSAGE"
+  restartPolicy: Never

@@ -1,0 +1,47 @@
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: mongodb-arbiter
+  namespace: mongodb
+  labels:
+    platform: fast
+    app: mongodb
+spec:
+  selector:
+    matchLabels:
+      app: mongodb
+      platform: fast
+      component: arbiter
+  minAvailable: 1
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: mongodb-primary
+  namespace: mongodb
+  labels:
+    platform: fast
+    app: mongodb
+spec:
+  selector:
+    matchLabels:
+      platform: fast
+      app: mongodb
+      component: primary
+  minAvailable: 1
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: mongodb-secondary
+  namespace: mongodb
+  labels:
+    app: mongodb
+    platform: fast
+spec:
+  selector:
+    matchLabels:
+      platform: fast
+      app: mongodb
+      component: secondary
+  minAvailable: 1

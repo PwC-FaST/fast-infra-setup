@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-headless
+  namespace: mongodb
+  labels:
+    platform: fast
+    app: mongodb
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: mongodb
+    port: 27017
+  selector:
+    platform: fast
+    app: mongodb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: mongodb
+  labels:
+    platform: fast
+    app: mongodb
+spec:
+  type: ClusterIP
+  ports:
+  - name: mongodb
+    port: 27017
+    targetPort: mongodb
+  selector:
+    platform: fast
+    app: mongodb
+    component: primary

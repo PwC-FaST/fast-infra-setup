@@ -1,0 +1,90 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: mongodb-arbiter
+  namespace: mongodb
+  labels:
+    platform: fast
+    app: mongodb
+spec:
+  selector:
+    matchLabels:
+      platform: fast
+      app: mongodb
+      component: arbiter
+  serviceName: mongodb-headless
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        platform: fast
+        app: mongodb
+        component: arbiter
+    spec:
+      securityContext:
+        fsGroup: 1001
+        runAsUser: 1001
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 10
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                    - mongodb
+                topologyKey: kubernetes.io/hostname
+      tolerations:
+        - effect: NoSchedule
+          key: workload
+          operator: Equal
+          value: tiny
+      containers:
+        - name: mongodb-arbiter
+          image: docker.io/bitnami/mongodb:4.0.2-debian-9
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 27017
+            name: mongodb
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 2Gi
+          env:
+          - name: MONGODB_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MONGODB_REPLICA_SET_MODE
+            value: "arbiter"
+          - name: MONGODB_PRIMARY_HOST
+            value: mongodb
+          - name: MONGODB_REPLICA_SET_NAME
+            value: "rs0"
+          - name: MONGODB_ADVERTISED_HOSTNAME
+            value: "$(MONGODB_POD_NAME).mongodb-headless.mongodb.svc.cluster.local"
+          - name: MONGODB_ENABLE_IPV6
+            value: "yes"
+          - name: MONGODB_EXTRA_FLAGS
+            value: 
+          livenessProbe:
+            tcpSocket:
+              port: mongodb
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+          readinessProbe:
+            tcpSocket:
+              port: mongodb
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6

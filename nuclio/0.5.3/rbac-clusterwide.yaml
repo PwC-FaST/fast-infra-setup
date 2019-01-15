@@ -1,0 +1,71 @@
+# All nuclio services are bound to the "nuclio" service account. In RBAC enabled setups, this service account is
+# bound to specific roles limiting what the services can do
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nuclio
+  namespace: nuclio
+
+---
+# All access to services, configmaps, deployments, ingresses and HPAs limited to the nuclio namespace
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: nuclio-function-deployer
+rules:
+- apiGroups: [""]
+  resources: ["services", "configmaps", "pods"]
+  verbs: ["*"]
+- apiGroups: ["apps", "extensions"]
+  resources: ["deployments"]
+  verbs: ["*"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
+  verbs: ["*"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["*"]
+
+---
+# Bind the "nuclio" service account (used by controller / playground) to the nuclio-function-deployer role,
+# allowing them to create deployments, services, etc
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: nuclio-function-deployer-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: nuclio-function-deployer
+subjects:
+- kind: ServiceAccount
+  name: nuclio
+  namespace: nuclio
+
+---
+# All access to the function/project/functionevents custom resource definition
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: nuclio-functioncr-admin
+rules:
+- apiGroups: ["nuclio.io"]
+  resources: ["functions", "projects", "functionevents"]
+  verbs: ["*"]
+
+---
+# Bind the "nuclio" service account (used by controller / playground) to the nuclio-functioncr-admin role,
+# allowing them to create / delete function custom resource definitions in the nuclio namespace
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: nuclio-functioncr-admin-clusterrolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: nuclio-functioncr-admin
+subjects:
+- kind: ServiceAccount
+  name: nuclio
+  namespace: nuclio
+

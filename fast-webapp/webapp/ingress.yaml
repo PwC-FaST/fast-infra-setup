@@ -1,0 +1,62 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fast-webapp
+  namespace: fast-platform
+  labels:
+    platform: fast
+    module: core
+    app: webapp
+  annotations:
+    ingress.kubernetes.io/app-root: /static/farmer_mobile_app/index.html
+spec:
+  rules:
+  - host: mobile.fast.sobloo.io
+    http:
+      paths:
+      - backend:
+          serviceName: fast-webapp
+          servicePort: http
+        path: /
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fast-webapp-embedded
+  namespace: fast-platform
+  labels:
+    platform: fast
+    module: core
+    app: webapp
+  annotations:
+    ingress.kubernetes.io/app-root: /static/farmer_mobile_app/embedded.html
+spec:
+  rules:
+  - host: embedded.fast.sobloo.io
+    http:
+      paths:
+      - backend:
+          serviceName: fast-webapp
+          servicePort: http
+        path: /
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fast-webapp-admin
+  namespace: fast-platform
+  labels:
+    platform: fast
+    module: core
+    app: webapp
+  annotations:
+    ingress.kubernetes.io/app-root: /admin
+spec:
+  rules:
+  - host: admin.fast.sobloo.io
+    http:
+      paths:
+      - backend:
+          serviceName: fast-webapp
+          servicePort: http
+        path: /

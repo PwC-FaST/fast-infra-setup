@@ -1,0 +1,185 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: fast-webapp
+  namespace: fast-platform
+  labels:
+    platform: fast
+    module: core
+    app: webapp
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        platform: fast
+        module: core
+        app: webapp
+    spec:
+      containers:
+      - name: nginx
+        image: eufast/fast-webapp-nginx:0.1.0
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 1
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 1
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /fast/static
+          name: ephemeral-data
+          subPath: static
+        - mountPath: /fast/media
+          name: data
+          subPath: media
+      - name: webapp
+        image: eufast/fast-webapp:0.1.0
+        imagePullPolicy: Always
+        env:
+        - name: DJANGO_CONFIGURATION
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: django-configuration
+        - name: FAST_WEBAPP_PORT
+          value: '8081'
+        - name: FAST_WEBAPP_PUBLIC_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: django-allowed-host
+        - name: FAST_POSTGRES_WEBAPP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: postgres-db-host
+        - name: FAST_POSTGRES_WEBAPP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: postgres-db-port
+        - name: FAST_POSTGRES_WEBAPP_DATABASE 
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: postgres-db-name
+        - name: FAST_POSTGRES_WEBAPP_USER 
+          valueFrom:
+            secretKeyRef:
+              name: fast-webapp
+              key: postgres-db-user
+        - name: FAST_POSTGRES_WEBAPP_PASSWORD 
+          valueFrom:
+            secretKeyRef: 
+              name: fast-webapp
+              key: postgres-db-password
+        - name: FAST_WEBAPP_DJANGO_SECRET_KEY 
+          valueFrom:
+            secretKeyRef: 
+              name: fast-webapp
+              key: django-secret-key
+        - name: FAST_API_PARCEL_INFO_URL 
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: parcel-info-url
+        - name: FAST_API_PARCEL_SOIL_URL 
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: parcel-soil-url
+        - name: FAST_API_PARCEL_HYDRO_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: parcel-hydro-url
+        - name: FAST_API_PARCEL_NATURA2000_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: parcel-natura2000-url 
+        - name: FAST_API_PARCEL_TOPSOIL_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: parcel-topsoil-url
+        - name: FAST_API_PARCEL_SNAPSHOT_SVG_URL 
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: parcel-snapshot-svg-url
+        - name: FAST_DARK_SKY_TIME_MACHINE_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: dark-sky-time-machine-api-url
+        - name: FAST_DARK_SKY_FORECAST_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: dark-sky-forecast-api-url
+        - name: FAST_DARK_SKY_API_KEY
+          valueFrom:
+            secretKeyRef: 
+              name: fast-webapp
+              key: dark-sky-api-key
+        - name: FAST_MAPQUEST_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fast-webapp
+              key: mapquest-api-url
+        - name: FAST_MAPQUEST_API_KEY
+          valueFrom:
+            secretKeyRef: 
+              name: fast-webapp
+              key: mapquest-api-key
+        - name: FAST_WEBAPP_DEFAULT_DJANGO_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fast-webapp
+              key: fast-webapp-default-django-password
+        ports:
+        - name: django
+          containerPort: 8081
+        resources:
+          limits:
+            cpu: 2
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+        - mountPath: /fast/static
+          name: ephemeral-data
+          subPath: static
+        - mountPath: /fast/log
+          name: ephemeral-data
+          subPath: log
+        - mountPath: /fast/media
+          name: data
+          subPath: media
+      volumes:
+      - name: ephemeral-data
+        emptyDir: {}
+      - name: data
+        persistentVolumeClaim:
+          claimName: fast-webapp

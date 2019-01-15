@@ -1,0 +1,24 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: fast-webapp
+  namespace: fast-platform
+  labels:
+    platform: fast
+    module: core
+    app: webapp
+data:
+  django-configuration: Prod
+  django-allowed-host: fast.sobloo.io
+  postgres-db-host: fast-webapp-postgres
+  postgres-db-port: '5432'
+  postgres-db-name: fast
+  parcel-info-url: http://parcel-info-360/gis
+  parcel-soil-url: http://parcel-info-360/soc
+  parcel-hydro-url: http://parcel-info-360/hydro
+  parcel-natura2000-url: http://parcel-info-360/natura2000
+  parcel-topsoil-url: http://parcel-info-360/topsoil
+  parcel-snapshot-svg-url: http://parcel-svg-snapshot
+  dark-sky-time-machine-api-url: https://api.darksky.net/forecast/{key}/{latitude},{longitude},{time}?units=si&lang=en
+  dark-sky-forecast-api-url: https://api.darksky.net/forecast/{key}/{latitude},{longitude}?units=si&lang=en
+  mapquest-api-url: http://www.mapquestapi.com/geocoding/v1/batch
